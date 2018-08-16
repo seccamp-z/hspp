@@ -60,3 +60,6 @@ EXTRA_CFLAGS += -O3 -g -Wfatal-errors
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 endif
+
+run:
+	sudo ./build/out
