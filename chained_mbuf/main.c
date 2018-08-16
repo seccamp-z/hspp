@@ -15,6 +15,7 @@
 
 uint8_t buf0[100] = {0x11};
 uint8_t buf1[100] = {0x22};
+uint8_t buf2[100] = {0x33};
 
 static void port_configure(uint8_t port, size_t nb_rxq, size_t nb_txq,
       const struct rte_eth_conf* port_conf, struct rte_mempool* mp)
@@ -68,12 +69,16 @@ int main(int argc, char **argv)
 
   struct rte_mbuf* m0 = rte_pktmbuf_alloc(mp);
   struct rte_mbuf* m1 = rte_pktmbuf_alloc(mp);
+  struct rte_mbuf* m2 = rte_pktmbuf_alloc(mp);
   memset(buf0, 0x11, sizeof(buf0));
   memset(buf1, 0x22, sizeof(buf1));
+  memset(buf2, 0x33, sizeof(buf2));
   mbuf_set(m0, buf0, sizeof(buf0));
   mbuf_set(m1, buf1, sizeof(buf1));
+  mbuf_set(m2, buf2, sizeof(buf2));
 
   rte_pktmbuf_chain(m0, m1);
+  rte_pktmbuf_chain(m0, m2);
   /* rte_pktmbuf_linearize(m0); */
   rte_pktmbuf_dump(stdout, m0, rte_pktmbuf_pkt_len(m0));
 
