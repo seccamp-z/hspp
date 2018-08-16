@@ -10,12 +10,8 @@
 #include <rte_ethdev.h>
 #include <rte_mempool.h>
 #include <rte_mbuf.h>
-#include "misc.h"
 #define unused(a) (void)(a)
 
-uint8_t buf0[100] = {0x11};
-uint8_t buf1[100] = {0x22};
-uint8_t buf2[100] = {0x33};
 
 static void port_configure(uint8_t port, size_t nb_rxq, size_t nb_txq,
       const struct rte_eth_conf* port_conf, struct rte_mempool* mp)
@@ -64,12 +60,19 @@ int main(int argc, char **argv)
   if (!mp) rte_exit(EXIT_FAILURE, "Invalid MP parameters\n");
 
   struct rte_eth_conf port_conf;
-  init_portconf(&port_conf);
+  memset(&port_conf, 0, sizeof(struct rte_eth_conf));
+  port_conf.rxmode.mq_mode = ETH_MQ_RX_NONE;
+  port_conf.rxmode.max_rx_pkt_len = ETHER_MAX_LEN;
+  port_conf.rxmode.header_split = 0;
+  port_conf.rxmode.jumbo_frame = 1;
+  port_conf.rxmode.enable_scatter = 1;
+  port_conf.txmode.mq_mode = ETH_MQ_TX_NONE;
   port_configure(0,1,1,&port_conf,mp);
 
   struct rte_mbuf* m0 = rte_pktmbuf_alloc(mp);
   struct rte_mbuf* m1 = rte_pktmbuf_alloc(mp);
   struct rte_mbuf* m2 = rte_pktmbuf_alloc(mp);
+  uint8_t buf0[100], buf1[100], buf2[100];
   memset(buf0, 0x11, sizeof(buf0));
   memset(buf1, 0x22, sizeof(buf1));
   memset(buf2, 0x33, sizeof(buf2));
