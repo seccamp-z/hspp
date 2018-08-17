@@ -20,7 +20,7 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
-struct rte_mbuf* tap_read(int fd, struct rte_mempool* mp)
+struct rte_mbuf* tap_recv(int fd, struct rte_mempool* mp)
 {
   struct rte_mbuf* m = rte_pktmbuf_alloc(mp);
   ssize_t len = read(fd, rte_pktmbuf_mtod(m, void*),

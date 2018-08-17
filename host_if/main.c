@@ -21,8 +21,10 @@
 #include <rte_cycles.h>
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
+#include <rte_ring.h>
 #include "tap.h"
 
+#define UNUSED(a) (void)(a)
 #define RX_RING_SIZE 1024
 #define TX_RING_SIZE 1024
 #define NUM_MBUFS 8191
@@ -32,6 +34,7 @@
 int hostif_fd = -1;
 const uint32_t hostif_addr = 0x0a000001;
 struct rte_mempool* mp = NULL;
+struct rte_ring* from_hostif = NULL;
 
 static void port_configure(uint8_t port, size_t nb_rxq, size_t nb_txq,
       const struct rte_eth_conf* port_conf, struct rte_mempool* mp)
@@ -79,8 +82,9 @@ static void port_input(struct rte_mbuf* m)
   /* if (unlikely(nb_tx != 1)) rte_pktmbuf_free(bufs[i]); */
 }
 
-static void lcore_main(void)
+static void* fwd_main(void* dum)
 {
+  UNUSED(dum);
   const uint16_t nb_ports = rte_eth_dev_count();
   for (uint16_t port = 0; port < nb_ports; port++)
     if (rte_eth_dev_socket_id(port) > 0 &&
@@ -90,19 +94,46 @@ static void lcore_main(void)
           "polling thread.\n\tPerformance will "
           "not be optimal.\n", port);
 
-  printf("\nCore %u forwarding packets. [Ctrl+C to quit]\n", rte_lcore_id());
+  printf("Core %u forwarding main\n", rte_lcore_id());
   for (;;) {
-    for (uint16_t port = 0; port < nb_ports; port++) {
 
-      struct rte_mbuf *bufs[BURST_SIZE];
-      const uint16_t nb_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE);
-      if (unlikely(nb_rx == 0)) continue;
-
-      for (uint16_t i=0; i<nb_rx; i++) {
-        port_input(bufs[i]);
+    /*
+     * Check Packet from hostif
+     */
+    if (rte_ring_empty(from_hostif) == 0) {
+      struct rte_mbuf* mbufs[BURST_SIZE];
+      size_t ndeq = rte_ring_dequeue_burst(from_hostif, (void**)mbufs, BURST_SIZE, NULL);
+      for (size_t i=0; i<ndeq; i++) {
+        printf("receive from host\n");
+        uint16_t ntx = rte_eth_tx_burst(0, 0, &mbufs[i], 1);
+        if (ntx != 1) rte_pktmbuf_free(mbufs[i]);
       }
     }
+
+    /*
+     * Receive Physical Interface
+     */
+    const uint16_t port = 0;
+    struct rte_mbuf *bufs[BURST_SIZE];
+    const uint16_t nb_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE);
+    if (unlikely(nb_rx == 0)) continue;
+    for (uint16_t i=0; i<nb_rx; i++) {
+      port_input(bufs[i]);
+    }
+
+  } /* for (;;) */
+  return NULL;
+}
+
+static void* tap_main(void* dum)
+{
+  UNUSED(dum);
+  printf("Core %u tap main\n", rte_lcore_id());
+  while (1) {
+    struct rte_mbuf* m = tap_recv(hostif_fd, mp);
+    rte_ring_enqueue(from_hostif, m);
   }
+  return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -119,6 +150,11 @@ int main(int argc, char *argv[])
 
   hostif_fd = tap_alloc(hostif_addr);
 
+  uint32_t ringflags = 0;
+  size_t ringsize = 8192;
+  from_hostif = rte_ring_create("RING_FROM_HOSTIF", ringsize, 0, ringflags);
+  if (from_hostif == NULL) rte_exit(EXIT_FAILURE, "Cannot create ring\n");
+
   struct rte_eth_conf port_conf;
   memset(&port_conf, 0, sizeof(struct rte_eth_conf));
   port_conf.rxmode.mq_mode = ETH_MQ_RX_NONE;
@@ -129,6 +165,14 @@ int main(int argc, char *argv[])
   port_conf.rxmode.ignore_offload_bitfield = 1;
   port_configure(0,1,1,&port_conf,mp);
 
-  lcore_main();
+  pthread_t fwd_thread;
+  pthread_t tap_thread;
+  ret = pthread_create(&fwd_thread, NULL, fwd_main, NULL);
+  if (ret != 0) rte_exit(EXIT_FAILURE, "Failed create fwd_thread\n");
+  ret = pthread_create(&tap_thread, NULL, tap_main, NULL);
+  if (ret != 0) rte_exit(EXIT_FAILURE, "Failed create tap_thread\n");
+  pthread_join(fwd_thread, NULL);
+  pthread_join(tap_thread, NULL);
   return 0;
 }
+

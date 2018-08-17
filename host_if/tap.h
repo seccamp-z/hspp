@@ -6,7 +6,7 @@
 struct rte_mempool;
 struct rte_mbuf;
 
-struct rte_mbuf* tap_read(int fd, struct rte_mempool* mp);
+struct rte_mbuf* tap_recv(int fd, struct rte_mempool* mp);
 void tap_send(int fd, struct rte_mbuf* m);
 int tap_alloc(uint32_t addr_little);
 
