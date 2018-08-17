@@ -82,6 +82,17 @@ int tap_alloc(uint32_t addr_little, struct ether_addr* hwaddr)
   if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFADDR failed\n");
   close(sock);
 
+  /* set netmask */
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  memset(&ifr, 0x0, sizeof(ifr));
+  s_in = (struct sockaddr_in *)&ifr.ifr_addr;
+  s_in->sin_family = AF_INET;
+  s_in->sin_addr.s_addr = htonl(0xffffff00);
+  strncpy(ifr.ifr_name, "host0", IFNAMSIZ-1);
+  ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
+  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFADDR failed\n");
+  close(sock);
+
   return fd;
 }
 

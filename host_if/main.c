@@ -70,6 +70,7 @@ static void port_input(struct rte_mbuf* m)
 {
   struct ether_hdr* eh = rte_pktmbuf_mtod(m, struct ether_hdr*);
   switch (htons(eh->ether_type)) {
+    case 0x86dd:
     case 0x0800:
     case 0x0806:
       tap_send(hostif_fd, m);
@@ -160,8 +161,9 @@ int main(int argc, char *argv[])
   port_configure(0,1,1,&port_conf,mp);
   rte_eth_macaddr_get(0, &ifhwaddr);
   printf("port0 addr: %02x:%02x:%02x:%02x:%02x:%02x \n",
-      ifhwaddr.addr_bytes[0], ifhwaddr.addr_bytes[1], ifhwaddr.addr_bytes[2],
-      ifhwaddr.addr_bytes[3], ifhwaddr.addr_bytes[4], ifhwaddr.addr_bytes[5]);
+      ifhwaddr.addr_bytes[0], ifhwaddr.addr_bytes[1],
+      ifhwaddr.addr_bytes[2], ifhwaddr.addr_bytes[3],
+      ifhwaddr.addr_bytes[4], ifhwaddr.addr_bytes[5]);
 
   hostif_fd = tap_alloc(hostif_addr, &ifhwaddr);
   uint32_t ringflags = 0;

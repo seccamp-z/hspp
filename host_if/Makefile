@@ -63,3 +63,9 @@ endif
 
 run:
 	sudo ./build/out --vdev=net_tap0,iface=dpdk0
+
+netns:
+	sudo ip link set dpdk0 netns ns0
+	sudo ip netns exec ns0 ip link set dpdk0 up
+	sudo ip netns exec ns0 ip addr add 10.0.0.2/24 dev dpdk0
+
