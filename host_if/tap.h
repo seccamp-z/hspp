@@ -9,7 +9,8 @@ struct ether_addr;
 
 struct rte_mbuf* tap_recv(int fd, struct rte_mempool* mp);
 void tap_send(int fd, struct rte_mbuf* m);
-int tap_alloc(uint32_t addr_little, struct ether_addr* hwaddr);
+int tap_alloc(uint32_t addr_le, uint32_t mask_le, struct ether_addr* hwaddr);
+void tap_free(int fd);
 
 #endif /* TAP_H */
 

@@ -5,7 +5,7 @@
 APP = out
 
 # all source are stored in SRCS-y
-SRCS-y := main.c tap.c
+SRCS-y := main.c tap.c port.c
 
 # Build using pkg-config variables if possible
 $(shell pkg-config --exists libdpdk)
