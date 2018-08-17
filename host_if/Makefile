@@ -5,7 +5,7 @@
 APP = out
 
 # all source are stored in SRCS-y
-SRCS-y := main.c
+SRCS-y := main.c tap.c
 
 # Build using pkg-config variables if possible
 $(shell pkg-config --exists libdpdk)
@@ -62,4 +62,4 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 endif
 
 run:
-	sudo ./build/out
+	sudo ./build/out --vdev=net_tap0,iface=dpdk0

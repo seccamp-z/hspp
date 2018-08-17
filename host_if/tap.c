@@ -1,0 +1,71 @@
+
+#include "tap.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <linux/if_tun.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+
+#include <rte_eal.h>
+#include <rte_ethdev.h>
+#include <rte_cycles.h>
+#include <rte_lcore.h>
+#include <rte_mbuf.h>
+
+struct rte_mbuf* tap_read(int fd, struct rte_mempool* mp)
+{
+  struct rte_mbuf* m = rte_pktmbuf_alloc(mp);
+  ssize_t len = read(fd, rte_pktmbuf_mtod(m, void*),
+                      m->buf_len-rte_pktmbuf_headroom(m));
+  if (len < 0) rte_exit(EXIT_FAILURE, "tap receive failed\n");
+  m->pkt_len = m->data_len = len;
+  return m;
+}
+
+void tap_send(int fd, struct rte_mbuf* m)
+{
+  ssize_t len = write(fd, rte_pktmbuf_mtod(m, void*), m->pkt_len);
+  if (len < 0) rte_exit(EXIT_FAILURE, "tap send failed\n");
+  rte_pktmbuf_free(m);
+}
+
+int tap_alloc(uint32_t addr_little)
+{
+  /* open tap interface */
+  int fd = open("/dev/net/tun", O_RDWR);
+  if (fd < 0) rte_exit(EXIT_FAILURE, "Cannot create tap\n");
+  struct ifreq ifr;
+  memset(&ifr, 0x0, sizeof(ifr));
+  ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+  strncpy(ifr.ifr_name, "host0", IFNAMSIZ);
+  int ret = ioctl(fd, TUNSETIFF, (void*)&ifr);
+  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl TUNSETIFF failed\n");
+
+  /* ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER; */
+  /* etehr_addr_copy(hwaddr, (struct ether_addr*)&ifr.ifr_hwaddr.sa_data); */
+  /* ret = ioctl(fd, SIOCSIFHWADDR, &ifr); */
+  /* if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFHWADDR failed\n"); */
+
+  /* set ifaddress */
+  int sock = socket(AF_INET, SOCK_DGRAM, 0);
+  memset(&ifr, 0x0, sizeof(ifr));
+  struct sockaddr_in *s_in;
+  s_in = (struct sockaddr_in *)&ifr.ifr_addr;
+  s_in->sin_family = AF_INET;
+  s_in->sin_addr.s_addr = htonl(addr_little);
+  strncpy(ifr.ifr_name, "host0", IFNAMSIZ-1);
+  ret = ioctl(sock, SIOCSIFADDR, &ifr);
+  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFADDR failed\n");
+  close(sock);
+
+  return fd;
+}
+
