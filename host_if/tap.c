@@ -54,8 +54,19 @@ int tap_alloc(uint32_t addr_little)
   /* ret = ioctl(fd, SIOCSIFHWADDR, &ifr); */
   /* if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFHWADDR failed\n"); */
 
-  /* set ifaddress */
+  /* set link up */
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
+  memset(&ifr, 0x0, sizeof(ifr));
+  strncpy(ifr.ifr_name, "host0", IFNAMSIZ-1);
+  ret = ioctl(sock, SIOCGIFFLAGS, &ifr);
+  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCGIFFLAGS failed\n");
+  ifr.ifr_flags |= IFF_UP;
+  ret = ioctl(sock, SIOCSIFFLAGS, &ifr);
+  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFFLAGS failed\n");
+  close(sock);
+
+  /* set ifaddress */
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
   memset(&ifr, 0x0, sizeof(ifr));
   struct sockaddr_in *s_in;
   s_in = (struct sockaddr_in *)&ifr.ifr_addr;
