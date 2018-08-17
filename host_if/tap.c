@@ -11,14 +11,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <net/if.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <net/if_arp.h>
 
 #include <rte_eal.h>
 #include <rte_ethdev.h>
 #include <rte_cycles.h>
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
+#include <rte_ether.h>
 
 struct rte_mbuf* tap_recv(int fd, struct rte_mempool* mp)
 {
@@ -37,7 +41,7 @@ void tap_send(int fd, struct rte_mbuf* m)
   rte_pktmbuf_free(m);
 }
 
-int tap_alloc(uint32_t addr_little)
+int tap_alloc(uint32_t addr_little, struct ether_addr* hwaddr)
 {
   /* open tap interface */
   int fd = open("/dev/net/tun", O_RDWR);
@@ -49,10 +53,11 @@ int tap_alloc(uint32_t addr_little)
   int ret = ioctl(fd, TUNSETIFF, (void*)&ifr);
   if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl TUNSETIFF failed\n");
 
-  /* ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER; */
-  /* etehr_addr_copy(hwaddr, (struct ether_addr*)&ifr.ifr_hwaddr.sa_data); */
-  /* ret = ioctl(fd, SIOCSIFHWADDR, &ifr); */
-  /* if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFHWADDR failed\n"); */
+  /* set hwaddr to tap */
+  ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+  ether_addr_copy(hwaddr, (struct ether_addr*)&ifr.ifr_hwaddr.sa_data);
+  ret = ioctl(fd, SIOCSIFHWADDR, &ifr);
+  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFHWADDR failed\n");
 
   /* set link up */
   int sock = socket(AF_INET, SOCK_DGRAM, 0);

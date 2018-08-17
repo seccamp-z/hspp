@@ -35,6 +35,7 @@ int hostif_fd = -1;
 const uint32_t hostif_addr = 0x0a000001;
 struct rte_mempool* mp = NULL;
 struct rte_ring* from_hostif = NULL;
+struct ether_addr ifhwaddr;
 
 static void port_configure(uint8_t port, size_t nb_rxq, size_t nb_txq,
       const struct rte_eth_conf* port_conf, struct rte_mempool* mp)
@@ -148,13 +149,6 @@ int main(int argc, char *argv[])
     MBUF_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, rte_socket_id());
   if (mp == NULL) rte_exit(EXIT_FAILURE, "Cannot create mbuf pool\n");
 
-  hostif_fd = tap_alloc(hostif_addr);
-
-  uint32_t ringflags = 0;
-  size_t ringsize = 8192;
-  from_hostif = rte_ring_create("RING_FROM_HOSTIF", ringsize, 0, ringflags);
-  if (from_hostif == NULL) rte_exit(EXIT_FAILURE, "Cannot create ring\n");
-
   struct rte_eth_conf port_conf;
   memset(&port_conf, 0, sizeof(struct rte_eth_conf));
   port_conf.rxmode.mq_mode = ETH_MQ_RX_NONE;
@@ -164,6 +158,16 @@ int main(int argc, char *argv[])
   port_conf.rxmode.enable_scatter = 1;
   port_conf.rxmode.ignore_offload_bitfield = 1;
   port_configure(0,1,1,&port_conf,mp);
+  rte_eth_macaddr_get(0, &ifhwaddr);
+  printf("port0 addr: %02x:%02x:%02x:%02x:%02x:%02x \n",
+      ifhwaddr.addr_bytes[0], ifhwaddr.addr_bytes[1], ifhwaddr.addr_bytes[2],
+      ifhwaddr.addr_bytes[3], ifhwaddr.addr_bytes[4], ifhwaddr.addr_bytes[5]);
+
+  hostif_fd = tap_alloc(hostif_addr, &ifhwaddr);
+  uint32_t ringflags = 0;
+  size_t ringsize = 8192;
+  from_hostif = rte_ring_create("RING_FROM_HOSTIF", ringsize, 0, ringflags);
+  if (from_hostif == NULL) rte_exit(EXIT_FAILURE, "Cannot create ring\n");
 
   pthread_t fwd_thread;
   pthread_t tap_thread;
