@@ -49,9 +49,9 @@ int main(int argc, char **argv)
   int ntx = rte_eth_tx_burst(0, 0, (struct rte_mbuf**)&m0, 1);
   if (ntx != 1) rte_exit(EXIT_FAILURE, "tx_burst\n");
 
-  /* rte_pktmbuf_free(m0); */
-  /* rte_pktmbuf_free(m1); */
-  /* rte_mempool_free(mp); */
+  rte_pktmbuf_free(m0);
+  rte_pktmbuf_free(m1);
+  rte_mempool_free(mp);
   return 0;
 }
 
