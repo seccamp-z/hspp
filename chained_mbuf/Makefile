@@ -56,7 +56,7 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 endif
 
 run:
-	sudo ./build/out
+	sudo ./build/out -w 02:00.1
 
 gdb:
 	sudo cgdb ./build/out
