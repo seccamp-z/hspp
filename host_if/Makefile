@@ -62,10 +62,16 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 endif
 
 run:
-	sudo ./build/out --vdev=net_tap0,iface=dpdk0
+	sudo ./build/out \
+		--vdev=net_tap0,iface=dpdk0 \
+		--vdev=net_tap1,iface=dpdk1
 
 netns:
 	sudo ip link set dpdk0 netns ns0
 	sudo ip netns exec ns0 ip link set dpdk0 up
 	sudo ip netns exec ns0 ip addr add 10.0.0.2/24 dev dpdk0
+	sudo ip link set dpdk1 netns ns1
+	sudo ip netns exec ns1 ip link set dpdk1 up
+	sudo ip netns exec ns1 ip addr add 10.1.0.2/24 dev dpdk1
+
 

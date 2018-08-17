@@ -56,7 +56,8 @@ port_configure(uint8_t port, size_t nb_rxq, size_t nb_txq,
 
 port_t*
 port_alloc(uint16_t dpdk_pid, size_t nrxq, size_t ntxq,
-            uint32_t ifaddr_le, uint32_t ifmask_le)
+            uint32_t ifaddr_le, uint32_t ifmask_le,
+            const char* ifname)
 {
   port_t* port = (port_t*)malloc(sizeof(port_t));
   if (!port) rte_exit(EXIT_FAILURE, "port_alloc: malloc miss\n");
@@ -91,10 +92,12 @@ port_alloc(uint16_t dpdk_pid, size_t nrxq, size_t ntxq,
       port->hwaddr.addr_bytes[2], port->hwaddr.addr_bytes[3],
       port->hwaddr.addr_bytes[4], port->hwaddr.addr_bytes[5]);
 
-  port->hostif_fd = tap_alloc(ifaddr_le, ifmask_le, &port->hwaddr);
+  port->hostif_fd = tap_alloc(ifname, ifaddr_le, ifmask_le, &port->hwaddr);
   uint32_t ringflags = 0;
   size_t ringsize = 8192;
-  port->from_hostif = rte_ring_create("RING_FROM_HOSTIF", ringsize, 0, ringflags);
+  char ringname[100];
+  snprintf(ringname, sizeof(ringname), "PORT%u_HOSTRING", dpdk_pid);
+  port->from_hostif = rte_ring_create(ringname, ringsize, 0, ringflags);
   if (port->from_hostif == NULL) rte_exit(EXIT_FAILURE, "Cannot create ring\n");
 
   return port;
