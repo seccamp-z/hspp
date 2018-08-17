@@ -16,8 +16,7 @@
 #include "port.h"
 
 #define UNUSED(a) (void)(a)
-#define BURST_SIZE 32
-port_t* port[2];
+port_t* port[RTE_MAX_ETHPORTS];
 
 static void port_input(struct rte_mbuf* m, port_t* pp)
 {
@@ -26,6 +25,8 @@ static void port_input(struct rte_mbuf* m, port_t* pp)
     case 0x86dd:
     case 0x0800:
     case 0x0806:
+      printf("Egress Packet\n");
+      rte_pktmbuf_dump(stdout, m, rte_pktmbuf_pkt_len(m));
       tap_send(pp->hostif_fd, m);
       break;
     default:
@@ -33,8 +34,6 @@ static void port_input(struct rte_mbuf* m, port_t* pp)
       rte_pktmbuf_free(m);
       break;
   }
-  /* const uint16_t nb_tx = rte_eth_tx_burst(port ^ 1, 0, &bufs[i], 1); */
-  /* if (unlikely(nb_tx != 1)) rte_pktmbuf_free(bufs[i]); */
 }
 
 static void* fwd_main(void* dum)
@@ -44,17 +43,21 @@ static void* fwd_main(void* dum)
   const size_t n_ports = rte_eth_dev_count();
   while (true) {
     for (size_t pid=0; pid<n_ports; pid++) {
+      const size_t BURST_SIZE = 32;
 
       /*
        * Check Packet from hostif
        */
       if (rte_ring_empty(port[pid]->from_hostif) == 0) {
         struct rte_mbuf* mbufs[BURST_SIZE];
-        size_t ndeq = rte_ring_dequeue_burst(port[pid]->from_hostif,
-                          (void**)mbufs, BURST_SIZE, NULL);
+        size_t ndeq = rte_ring_dequeue_burst(
+            port[pid]->from_hostif, (void**)mbufs, BURST_SIZE, NULL);
         for (size_t i=0; i<ndeq; i++) {
-          printf("receive from host\n");
-          uint16_t ntx = rte_eth_tx_burst(port[pid]->dpdk_pid, 0, &mbufs[i], 1);
+          printf("Ingress Packet\n");
+          rte_pktmbuf_dump(stdout, mbufs[i],
+              rte_pktmbuf_pkt_len(mbufs[i]));
+          uint16_t ntx = rte_eth_tx_burst(
+              port[pid]->dpdk_pid, 0, &mbufs[i], 1);
           if (ntx != 1) rte_pktmbuf_free(mbufs[i]);
         }
       }
@@ -63,7 +66,8 @@ static void* fwd_main(void* dum)
        * Receive Physical Interface
        */
       struct rte_mbuf *bufs[BURST_SIZE];
-      const uint16_t nb_rx = rte_eth_rx_burst(port[pid]->dpdk_pid, 0, bufs, BURST_SIZE);
+      const uint16_t nb_rx = rte_eth_rx_burst(
+          port[pid]->dpdk_pid, 0, bufs, BURST_SIZE);
       if (unlikely(nb_rx == 0)) continue;
       for (uint16_t i=0; i<nb_rx; i++) {
         port_input(bufs[i], port[pid]);
@@ -93,8 +97,14 @@ int main(int argc, char *argv[])
   int ret = rte_eal_init(argc, argv);
   if (ret < 0) rte_exit(EXIT_FAILURE, "rte_eal_init\n");
 
-  port[0] = port_alloc(0, 1, 1, 0x0a000001, 0xffffff00, "ge-0-0-0");
-  port[1] = port_alloc(1, 1, 1, 0x0a010001, 0xffffff00, "ge-0-0-1");
+  const size_t nb_ports = rte_eth_dev_count();
+  for (size_t i=0; i<nb_ports; i++) {
+    char portname[100];
+    snprintf(portname, sizeof(portname), "ge-0-0-%lu", i);
+    uint32_t addr = (uint32_t)(10)<<24|(uint32_t)(i)<<16
+                  | (uint32_t)(0) <<8 |(uint32_t)(1)<<0 ;
+    port[i] = port_alloc(i, 1, 1, addr, 0xffffff00, portname);
+  }
 
   pthread_t fwd_thread;
   pthread_t tap_thread;

@@ -69,7 +69,9 @@ port_alloc(uint16_t dpdk_pid, size_t nrxq, size_t ntxq,
   port->mp = rte_pktmbuf_pool_create(mpname, num_mbufs,
                 MBUF_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_eth_dev_socket_id(dpdk_pid));
-  if (port->mp == NULL) rte_exit(EXIT_FAILURE, "Cannot create mbuf pool\n");
+  if (port->mp == NULL) {
+    rte_exit(EXIT_FAILURE, "Cannot create mbuf pool %s\n", mpname);
+  }
 
   struct rte_eth_conf port_conf;
   memset(&port_conf, 0, sizeof(struct rte_eth_conf));
@@ -87,7 +89,7 @@ port_alloc(uint16_t dpdk_pid, size_t nrxq, size_t ntxq,
       port->nrxq, port->ntxq,
       &port_conf, port->mp);
   rte_eth_macaddr_get(port->dpdk_pid, &port->hwaddr);
-  printf("port0 addr: %02x:%02x:%02x:%02x:%02x:%02x \n",
+  printf("%s addr: %02x:%02x:%02x:%02x:%02x:%02x \n", ifname,
       port->hwaddr.addr_bytes[0], port->hwaddr.addr_bytes[1],
       port->hwaddr.addr_bytes[2], port->hwaddr.addr_bytes[3],
       port->hwaddr.addr_bytes[4], port->hwaddr.addr_bytes[5]);
