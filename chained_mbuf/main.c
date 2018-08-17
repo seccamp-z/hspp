@@ -33,7 +33,7 @@ int main(int argc, char **argv)
   port_conf.txmode.mq_mode = ETH_MQ_TX_NONE;
   rte_eth_dev_configure_easy(0,1,1,&port_conf,mp);
 
-  uint8_t buf0[100], buf1[100], buf2[100];
+  uint8_t buf0[1000], buf1[1000], buf2[1000];
   memset(buf0, 0x11, sizeof(buf0));
   memset(buf1, 0x22, sizeof(buf1));
   memset(buf2, 0x33, sizeof(buf2));
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 
   rte_pktmbuf_chain(m0, m1);
   rte_pktmbuf_chain(m0, m2);
-  /* rte_pktmbuf_linearize(m0); */
+  rte_pktmbuf_linearize(m0);
   rte_pktmbuf_dump(stdout, m0, rte_pktmbuf_pkt_len(m0));
 
   int ntx = rte_eth_tx_burst(0, 0, (struct rte_mbuf**)&m0, 1);
