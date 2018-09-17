@@ -25,6 +25,7 @@ static void port_input(struct rte_mbuf* m, port_t* pp)
     case 0x86dd:
     case 0x0800:
     case 0x0806:
+    case 0x8100:
       printf("Egress Packet\n");
       rte_pktmbuf_dump(stdout, m, rte_pktmbuf_pkt_len(m));
       tap_send(pp->hostif_fd, m);
@@ -100,10 +101,8 @@ int main(int argc, char *argv[])
   const size_t nb_ports = rte_eth_dev_count();
   for (size_t i=0; i<nb_ports; i++) {
     char portname[100];
-    snprintf(portname, sizeof(portname), "ge-0-0-%lu", i);
-    uint32_t addr = (uint32_t)(10)<<24|(uint32_t)(i)<<16
-                  | (uint32_t)(0) <<8 |(uint32_t)(1)<<0 ;
-    port[i] = port_alloc(i, 1, 1, addr, 0xffffff00, portname);
+    snprintf(portname, sizeof(portname), "ge-0-0-%zd", i);
+    port[i] = port_alloc(i, 1, 1, portname);
   }
 
   pthread_t fwd_thread;

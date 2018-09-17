@@ -47,8 +47,7 @@ void tap_free(int fd)
 }
 
 int tap_alloc(const char* ifname,
-    uint32_t addr_le, uint32_t mask_le,
-    struct ether_addr* hwaddr)
+              struct ether_addr* hwaddr)
 {
   /* open tap interface */
   int fd = open("/dev/net/tun", O_RDWR);
@@ -75,29 +74,6 @@ int tap_alloc(const char* ifname,
   ifr.ifr_flags |= IFF_UP;
   ret = ioctl(sock, SIOCSIFFLAGS, &ifr);
   if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFFLAGS failed\n");
-  close(sock);
-
-  /* set inet addr */
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
-  memset(&ifr, 0x0, sizeof(ifr));
-  struct sockaddr_in *s_in;
-  s_in = (struct sockaddr_in *)&ifr.ifr_addr;
-  s_in->sin_family = AF_INET;
-  s_in->sin_addr.s_addr = htonl(addr_le);
-  strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
-  ret = ioctl(sock, SIOCSIFADDR, &ifr);
-  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFADDR failed\n");
-  close(sock);
-
-  /* set netmask */
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
-  memset(&ifr, 0x0, sizeof(ifr));
-  s_in = (struct sockaddr_in *)&ifr.ifr_addr;
-  s_in->sin_family = AF_INET;
-  s_in->sin_addr.s_addr = htonl(mask_le);
-  strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
-  ret = ioctl(sock, SIOCSIFNETMASK, &ifr);
-  if (ret < 0) rte_exit(EXIT_FAILURE, "ioctl SIOCSIFADDR failed\n");
   close(sock);
 
   return fd;

@@ -20,8 +20,8 @@ typedef struct port {
 } port_t;
 
 port_t* port_alloc(uint16_t dpdk_pid,
-          size_t nrxq, size_t ntxq, uint32_t ifaddr_le,
-          uint32_t ifmask_le, const char* ifname);
+                   size_t nrxq, size_t ntxq,
+                   const char* ifname);
 void port_free(port_t* port);
 
 #endif /* PORT_H */
