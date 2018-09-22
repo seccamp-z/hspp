@@ -26,8 +26,7 @@ netlink_sock_open(void)
 
   struct sockaddr_nl sa;
   sa.nl_family = AF_NETLINK;
-  sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR
-               | RTMGRP_IPV4_ROUTE | RTMGRP_NEIGH;
+  sa.nl_groups = ~0U;
   int ret = bind(sock, (struct sockaddr*)&sa, sizeof(sa));
   if (ret < 0) {
     fprintf(stderr, "bind: open netlink socket\n");
