@@ -37,8 +37,7 @@ inline static const char* nlmsg_type_to_str(uint16_t type)
     case RTM_DELTFILTER: return "RTM_DELTFILTER";
     case RTM_GETTFILTER: return "RTM_GETTFILTER";
     default:
-      fprintf(stderr, "%s: unknown\n", __func__);
-      exit(1);
+      fprintf(stderr, "%s: unknown(%d)\n", __func__, type);
   }
 }
 
@@ -174,7 +173,7 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
   memset(dstr, 0, sizeof(dstr));
   uint8_t* ptr = (uint8_t*)(rta + 1);
   for (size_t i=0; i<rta->rta_len-sizeof(struct rtattr); i++) {
-    char sub_str[10];
+    char sub_str[100];
     snprintf(sub_str, sizeof(sub_str), "%02x", ptr[i]);
     strncat(dstr, sub_str, sizeof(dstr));
   }

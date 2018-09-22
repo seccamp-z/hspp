@@ -16,8 +16,20 @@
 inline static void
 netlink_link_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
-  printf("this is link msg\n");
-  hexdump(fp, hdr, hdr->nlmsg_len);
+  struct ifinfomsg* ifm = (struct ifinfomsg*)(hdr + 1);
+	printf("ifi_family: %u\n", ifm->ifi_family);
+	printf("ifi_type: %u\n", ifm->ifi_type);
+	printf("ifi_index: %d\n", ifm->ifi_index);
+	printf("ifi_flags: %u\n", ifm->ifi_flags);
+	printf("ifi_change: %u\n", ifm->ifi_change);
+
+  size_t i=0;
+  size_t rta_len = IFA_PAYLOAD(hdr);
+  for (struct rtattr* rta = IFLA_RTA(ifm);
+       RTA_OK(rta, rta_len); rta = RTA_NEXT(rta, rta_len)) {
+    char str[512];
+    printf("attr[%zd]: %s\n", i++, rta_to_str(rta, str, sizeof(str)));
+  }
 }
 
 inline static void
@@ -33,8 +45,8 @@ netlink_addr_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
   printf("ifa_index: %d (%s)\n", ifa->ifa_index,
       if_indextoname(ifa->ifa_index, strbuf));
 
-  size_t rta_len = IFA_PAYLOAD(hdr);
   size_t i=0;
+  size_t rta_len = IFA_PAYLOAD(hdr);
   for (struct rtattr* rta = IFA_RTA(ifa);
        RTA_OK(rta, rta_len); rta = RTA_NEXT(rta, rta_len)) {
     char str[512];
@@ -70,8 +82,64 @@ netlink_route_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 inline static void
 netlink_neigh_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
-  printf("this is neigh msg\n");
-  hexdump(fp, hdr, hdr->nlmsg_len);
+  struct ndmsg* ndm = (struct ndmsg*)(hdr + 1);
+  printf("ndm_family: %u\n", ndm->ndm_family);
+	printf("ndm_pad1: %u\n", ndm->ndm_pad1);
+	printf("ndm_pad2: %u\n", ndm->ndm_pad2);
+	printf("ndm_ifindex: %d\n", ndm->ndm_ifindex);
+	printf("ndm_state: %u\n", ndm->ndm_state);
+	printf("ndm_flags: %u\n", ndm->ndm_flags);
+	printf("ndm_type: %u\n", ndm->ndm_type);
+
+  size_t i=0;
+  size_t rta_len = IFA_PAYLOAD(hdr);
+#define NDM_RTA(r)  ((struct rtattr*)(((char*)(r))+NLMSG_ALIGN(sizeof(struct ndmsg))))
+  for (struct rtattr* rta = NDM_RTA(ndm);
+       RTA_OK(rta, rta_len); rta = RTA_NEXT(rta, rta_len)) {
+    char str[512];
+    printf("attr[%zd]: %s\n", i++, rta_to_str(rta, str, sizeof(str)));
+  }
+}
+
+inline static void
+netlink_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
+{
+  printf("-----NLMSG-BEGIN---------------------------\n");
+  printf("nlmsg_len: %u\n", hdr->nlmsg_len  );
+  printf("nlmsg_type: %u (%s)\n", hdr->nlmsg_type, nlmsg_type_to_str(hdr->nlmsg_type));
+  printf("nlmsg_flags: %u\n", hdr->nlmsg_flags);
+  printf("nlmsg_seq: %u\n", hdr->nlmsg_seq  );
+  printf("nlmsg_pid: %u\n", hdr->nlmsg_pid  );
+
+  uint16_t type = hdr->nlmsg_type;
+  switch (type) {
+    case RTM_NEWLINK:
+    case RTM_DELLINK:
+    case RTM_GETLINK:
+      netlink_link_msg_dump(fp, hdr);
+      break;
+    case RTM_NEWADDR:
+    case RTM_DELADDR:
+    case RTM_GETADDR:
+      netlink_addr_msg_dump(fp, hdr);
+      break;
+    case RTM_NEWROUTE:
+    case RTM_DELROUTE:
+    case RTM_GETROUTE:
+      netlink_route_msg_dump(fp, hdr);
+      break;
+    case RTM_NEWNEIGH:
+    case RTM_DELNEIGH:
+    case RTM_GETNEIGH:
+      netlink_neigh_msg_dump(fp, hdr);
+      break;
+    default:
+      fprintf(stderr, "%s: unknown\n", __func__);
+      hexdump(stderr, hdr, hdr->nlmsg_len);
+      exit(1);
+      break;
+  }
+  printf("-----NLMSG-END-----------------------------\n");
 }
 
 #endif /* _NETLINK_DUMP_H_ */
