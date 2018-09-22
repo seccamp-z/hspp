@@ -1,4 +1,7 @@
 
+#ifndef _HEXDUMP_H_
+#define _HEXDUMP_H_
+
 inline static void hexdump(FILE* fp, const void* buffer, size_t bufferlen)
 {
   const uint8_t *data = (const uint8_t*)(buffer);
@@ -31,4 +34,6 @@ inline static void hexdump(FILE* fp, const void* buffer, size_t bufferlen)
   }
 
 }
+
+#endif /* _HEXDUMP_H_ */
 
