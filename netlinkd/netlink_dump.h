@@ -106,7 +106,7 @@ netlink_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
   printf("-----NLMSG-BEGIN---------------------------\n");
   printf("nlmsg_len: %u\n", hdr->nlmsg_len  );
-  printf("nlmsg_type: %u (%s)\n", hdr->nlmsg_type, nlmsg_type_to_str(hdr->nlmsg_type));
+  // printf("nlmsg_type: %u (%s)\n", hdr->nlmsg_type, nlmsg_type_to_str(hdr->nlmsg_type));
   printf("nlmsg_flags: %u\n", hdr->nlmsg_flags);
   printf("nlmsg_seq: %u\n", hdr->nlmsg_seq  );
   printf("nlmsg_pid: %u\n", hdr->nlmsg_pid  );

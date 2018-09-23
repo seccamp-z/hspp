@@ -16,6 +16,13 @@ dump_msg(const struct sockaddr_nl *who,
 	return 0;
 }
 
+/* static int */
+/* dump_msg2(const struct sockaddr_nl *who, */
+/* 		     struct nlmsghdr *n, void *arg) */
+/* { */
+/* 	return dump_msg(who, NULL, n, arg); */
+/* } */
+
 int
 main(int argc, char **argv)
 {
@@ -28,6 +35,11 @@ main(int argc, char **argv)
 		perror("Cannot send dump request");
 		return 1;
 	}
+
+	/* if (rtnl_dump_filter(&rth, dump_msg2, NULL) < 0) { */
+	/* 	fprintf(stderr, "Dump terminated\n"); */
+	/* 	return 1; */
+	/* } */
 
 	if (rtnl_listen(&rth, dump_msg, NULL) < 0)
 		return 2;
