@@ -17,11 +17,12 @@ inline static void
 netlink_link_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
   struct ifinfomsg* ifm = (struct ifinfomsg*)(hdr + 1);
-	printf("ifi_family: %u\n", ifm->ifi_family);
-	printf("ifi_type: %u\n", ifm->ifi_type);
-	printf("ifi_index: %d\n", ifm->ifi_index);
-	printf("ifi_flags: %u\n", ifm->ifi_flags);
-	printf("ifi_change: %u\n", ifm->ifi_change);
+  printf("ifi_family: %u <%s>\n", ifm->ifi_family,
+      ifa_family_to_str(ifm->ifi_family));
+  printf("ifi_type: %u\n", ifm->ifi_type);
+  printf("ifi_index: %d\n", ifm->ifi_index);
+  printf("ifi_flags: %u\n", ifm->ifi_flags);
+  printf("ifi_change: %u\n", ifm->ifi_change);
 
   size_t i=0;
   size_t rta_len = IFA_PAYLOAD(hdr);
@@ -84,12 +85,12 @@ netlink_neigh_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
   struct ndmsg* ndm = (struct ndmsg*)(hdr + 1);
   printf("ndm_family: %u\n", ndm->ndm_family);
-	printf("ndm_pad1: %u\n", ndm->ndm_pad1);
-	printf("ndm_pad2: %u\n", ndm->ndm_pad2);
-	printf("ndm_ifindex: %d\n", ndm->ndm_ifindex);
-	printf("ndm_state: %u\n", ndm->ndm_state);
-	printf("ndm_flags: %u\n", ndm->ndm_flags);
-	printf("ndm_type: %u\n", ndm->ndm_type);
+  printf("ndm_pad1: %u\n", ndm->ndm_pad1);
+  printf("ndm_pad2: %u\n", ndm->ndm_pad2);
+  printf("ndm_ifindex: %d\n", ndm->ndm_ifindex);
+  printf("ndm_state: %u\n", ndm->ndm_state);
+  printf("ndm_flags: %u\n", ndm->ndm_flags);
+  printf("ndm_type: %u\n", ndm->ndm_type);
 
   size_t i=0;
   size_t rta_len = IFA_PAYLOAD(hdr);
@@ -106,7 +107,9 @@ netlink_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
   printf("-----NLMSG-BEGIN---------------------------\n");
   printf("nlmsg_len: %u\n", hdr->nlmsg_len  );
-  // printf("nlmsg_type: %u (%s)\n", hdr->nlmsg_type, nlmsg_type_to_str(hdr->nlmsg_type));
+  printf("nlmsg_type: %u (%s)\n", hdr->nlmsg_type,
+      nlmsg_type_to_str(hdr->nlmsg_type)?
+      nlmsg_type_to_str(hdr->nlmsg_type):"unknwon");
   printf("nlmsg_flags: %u\n", hdr->nlmsg_flags);
   printf("nlmsg_seq: %u\n", hdr->nlmsg_seq  );
   printf("nlmsg_pid: %u\n", hdr->nlmsg_pid  );

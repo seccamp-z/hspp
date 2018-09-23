@@ -37,7 +37,8 @@ inline static const char* nlmsg_type_to_str(uint16_t type)
     case RTM_DELTFILTER: return "RTM_DELTFILTER";
     case RTM_GETTFILTER: return "RTM_GETTFILTER";
     default:
-      fprintf(stderr, "%s: unknown(%d)\n", __func__, type);
+      fprintf(stderr, "%s: unknown(%u)\n", __func__, type);
+      return "UNKOWN";
   }
 }
 
@@ -123,7 +124,7 @@ rta_type_to_str(uint16_t type)
     case IFLA_ADDRESS        : return "IFLA_ADDRESS";
     case IFLA_BROADCAST      : return "IFLA_BROADCAST";
     case IFLA_IFNAME         : return "IFLA_IFNAME";
-    case IFLA_MTU            : return "IFLA_MTU ";
+    case IFLA_MTU            : return "IFLA_MTU";
     case IFLA_LINK           : return "IFLA_LINK ";
     case IFLA_QDISC          : return "IFLA_QDISC";
     case IFLA_STATS          : return "IFLA_STATS";
@@ -169,18 +170,51 @@ rta_type_to_str(uint16_t type)
 inline static const char*
 rta_to_str(const struct rtattr* rta, char* str, size_t len)
 {
-  char dstr[100];
-  memset(dstr, 0, sizeof(dstr));
-  uint8_t* ptr = (uint8_t*)(rta + 1);
-  for (size_t i=0; i<rta->rta_len-sizeof(struct rtattr); i++) {
-    char sub_str[100];
-    snprintf(sub_str, sizeof(sub_str), "%02x", ptr[i]);
-    strncat(dstr, sub_str, sizeof(dstr));
+  switch (rta->rta_type) {
+    case IFLA_IFNAME:
+    {
+      snprintf(str, len, "%s <%s>",
+          rta_type_to_str(rta->rta_type), (const char*)(rta+1));
+      return str;
+    }
+    case IFLA_MTU:
+    {
+      uint32_t mtu = *(uint32_t*)(rta+1);
+      snprintf(str, len, "%s <%u>",
+          rta_type_to_str(rta->rta_type), mtu);
+      return str;
+    }
+    case IFLA_ADDRESS:
+    case IFLA_BROADCAST:
+    {
+      char substr[100];
+      memset(substr, 0x0, sizeof(substr));
+      size_t data_len = rta->rta_len-sizeof(struct rtattr);
+      uint8_t* data_ptr = (uint8_t*)(rta + 1);
+      for (size_t i=0; i<data_len; i++) {
+        char subsubstr[100];
+        snprintf(subsubstr, sizeof(subsubstr), "%02x:", data_ptr[i]);
+        strncat(substr, subsubstr, sizeof(substr));
+      }
+      snprintf(str, len, "%s <%s>",
+          rta_type_to_str(rta->rta_type), substr);
+      return str;
+    }
+    default:
+    {
+      char dstr[100];
+      memset(dstr, 0, sizeof(dstr));
+      uint8_t* ptr = (uint8_t*)(rta + 1);
+      for (size_t i=0; i<rta->rta_len-sizeof(struct rtattr); i++) {
+        char sub_str[100];
+        snprintf(sub_str, sizeof(sub_str), "%02x", ptr[i]);
+        strncat(dstr, sub_str, sizeof(dstr));
+      }
+      snprintf(str, len, "%s unsupport-data=<%s>",
+          rta_type_to_str(rta->rta_type), dstr);
+      return str;
+    }
   }
-  memset(str, 0x0, len);
-  snprintf(str, len, "%s data=%s",
-      rta_type_to_str(rta->rta_type), dstr);
-  return str;
 }
 
 #endif /* _NETLINK_TYPES_H_ */
