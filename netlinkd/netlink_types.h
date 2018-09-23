@@ -161,7 +161,7 @@ rta_type_to_str(uint16_t type)
     case IFLA_PROTO_DOWN     : return "IFLA_PROTO_DOWN";
     default:
       fprintf(stderr, "%s: unknown(%u)\n", __func__, type);
-      exit(1);
+      return "unknown";
       break;
   }
 }

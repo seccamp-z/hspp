@@ -134,9 +134,8 @@ netlink_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
       netlink_neigh_msg_dump(fp, hdr);
       break;
     default:
-      fprintf(stderr, "%s: unknown\n", __func__);
+      fprintf(stderr, "%s: unknown type(%u)\n", __func__, type);
       hexdump(stderr, hdr, hdr->nlmsg_len);
-      exit(1);
       break;
   }
   printf("-----NLMSG-END-----------------------------\n");
