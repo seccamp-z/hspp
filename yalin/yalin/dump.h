@@ -9,7 +9,11 @@
 #include <linux/socket.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
-#include "netlink_types.h"
+#include "types.h"
+
+#ifndef NDM_RTA
+#define NDM_RTA(r) ((struct rtattr*)(((char*)(r))+NLMSG_ALIGN(sizeof(struct ndmsg))))
+#endif
 
 inline static void
 hexdump(FILE* fp, const void* buffer, size_t bufferlen)
@@ -126,7 +130,6 @@ netlink_neigh_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 
   size_t i=0;
   size_t rta_len = IFA_PAYLOAD(hdr);
-#define NDM_RTA(r)  ((struct rtattr*)(((char*)(r))+NLMSG_ALIGN(sizeof(struct ndmsg))))
   for (struct rtattr* rta = NDM_RTA(ndm);
        RTA_OK(rta, rta_len); rta = RTA_NEXT(rta, rta_len)) {
     char str[512];

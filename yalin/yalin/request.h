@@ -1,5 +1,5 @@
 
-#include "netlink_socket.h"
+#include "socket.h"
 
 static inline int
 netlink_listen(netlink_t *rtnl,

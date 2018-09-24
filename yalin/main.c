@@ -4,9 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
-#include "netlink_socket.h"
-#include "netlink_request.h"
-#include "netlink_dump.h"
+#include "yalin/yalin.h"
 
 static int
 dump_msg(const struct sockaddr_nl *who,
