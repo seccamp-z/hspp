@@ -1,7 +1,8 @@
 
 # Netlinkd
 
-- programable netlink monitoring daemon
+programable netlink monitoring daemon.
+this is stand-alone netlink monitor daemon.
 
 ```
 $ sudo apt update && sudo apt install \
