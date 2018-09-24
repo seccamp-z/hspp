@@ -8,6 +8,7 @@
 
 static int
 dump_msg(const struct sockaddr_nl *who,
+         struct rtnl_ctrl_data* _dum_,
          struct nlmsghdr *n, void *arg)
 {
   netlink_msg_dump(stdout, n);

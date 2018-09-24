@@ -10,55 +10,26 @@
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include "types.h"
+#include "flags.h"
+#include "hexdump.h"
 
 #ifndef NDM_RTA
 #define NDM_RTA(r) ((struct rtattr*)(((char*)(r))+NLMSG_ALIGN(sizeof(struct ndmsg))))
 #endif
 
 inline static void
-hexdump(FILE* fp, const void* buffer, size_t bufferlen)
-{
-  const uint8_t *data = (const uint8_t*)(buffer);
-  size_t row = 0;
-  while (bufferlen > 0) {
-    fprintf(fp, "%04zx:   ", row);
-
-    size_t n;
-    if (bufferlen < 16) n = bufferlen;
-    else                n = 16;
-
-    for (size_t i = 0; i < n; i++) {
-      if (i == 8) fprintf(fp, " ");
-      fprintf(fp, " %02x", data[i]);
-    }
-    for (size_t i = n; i < 16; i++) {
-      fprintf(fp, "   ");
-    }
-    fprintf(fp, "   ");
-    for (size_t i = 0; i < n; i++) {
-      if (i == 8) fprintf(fp, "  ");
-      uint8_t c = data[i];
-      if (!(0x20 <= c && c <= 0x7e)) c = '.';
-      fprintf(fp, "%c", c);
-    }
-    fprintf(fp, "\n");
-    bufferlen -= n;
-    data += n;
-    row  += n;
-  }
-
-}
-
-inline static void
 netlink_link_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
+  char strbuf[100];
   struct ifinfomsg* ifm = (struct ifinfomsg*)(hdr + 1);
   printf("ifi_family: %u <%s>\n", ifm->ifi_family,
       ifa_family_to_str(ifm->ifi_family));
-  printf("ifi_type: %u\n", ifm->ifi_type);
+  printf("ifi_type: %u <%s>\n", ifm->ifi_type,
+      ifi_type_to_str(ifm->ifi_type));
   printf("ifi_index: %d\n", ifm->ifi_index);
-  printf("ifi_flags: %u\n", ifm->ifi_flags);
-  printf("ifi_change: %u\n", ifm->ifi_change);
+  printf("ifi_flags: 0x%x <%s>\n", ifm->ifi_flags,
+      ifi_flags_to_str(ifm->ifi_flags, strbuf, sizeof(strbuf)));
+  printf("ifi_change: 0x%x\n", ifm->ifi_change);
 
   size_t i=0;
   size_t rta_len = IFA_PAYLOAD(hdr);
@@ -77,7 +48,7 @@ netlink_addr_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
   printf("ifa_family: %u (%s)\n",
       ifa->ifa_family, ifa_family_to_str(ifa->ifa_family));
   printf("ifa_prefixlen: %u\n", ifa->ifa_prefixlen);
-  printf("ifa_flags: %u\n", ifa->ifa_flags);
+  printf("ifa_flags: 0x%x\n", ifa->ifa_flags);
   printf("ifa_scope: %u\n", ifa->ifa_scope    );
   printf("ifa_index: %d (%s)\n", ifa->ifa_index,
       if_indextoname(ifa->ifa_index, strbuf));
@@ -105,7 +76,7 @@ netlink_route_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
   printf("rtm_scope: %u\n", rtm->rtm_scope);
   printf("rtm_type: %u (%s)\n", rtm->rtm_type,
       rtn_type_to_str(rtm->rtm_type));
-  printf("rtm_flags: %u\n", rtm->rtm_flags);
+  printf("rtm_flags: 0x%x\n", rtm->rtm_flags);
 
   size_t i=0;
   size_t rta_len = IFA_PAYLOAD(hdr);
@@ -125,7 +96,7 @@ netlink_neigh_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
   printf("ndm_pad2: %u\n", ndm->ndm_pad2);
   printf("ndm_ifindex: %d\n", ndm->ndm_ifindex);
   printf("ndm_state: %u\n", ndm->ndm_state);
-  printf("ndm_flags: %u\n", ndm->ndm_flags);
+  printf("ndm_flags: 0x%x\n", ndm->ndm_flags);
   printf("ndm_type: %u\n", ndm->ndm_type);
 
   size_t i=0;
@@ -140,12 +111,16 @@ netlink_neigh_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 inline static void
 netlink_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
 {
+  char strbuf[100];
   printf("-----NLMSG-BEGIN---------------------------\n");
   printf("nlmsg_len: %u\n", hdr->nlmsg_len  );
-  printf("nlmsg_type: %u (%s)\n", hdr->nlmsg_type,
+  printf("nlmsg_type: %u <%s>\n", hdr->nlmsg_type,
       nlmsg_type_to_str(hdr->nlmsg_type)?
       nlmsg_type_to_str(hdr->nlmsg_type):"unknwon");
-  printf("nlmsg_flags: %u\n", hdr->nlmsg_flags);
+  printf("nlmsg_flags(get): 0x%x <%s>\n", hdr->nlmsg_flags,
+    nlmsg_flags_to_str_get(hdr->nlmsg_flags, strbuf, sizeof(strbuf)));
+  printf("nlmsg_flags(new): 0x%x <%s>\n", hdr->nlmsg_flags,
+    nlmsg_flags_to_str_new(hdr->nlmsg_flags, strbuf, sizeof(strbuf)));
   printf("nlmsg_seq: %u\n", hdr->nlmsg_seq  );
   printf("nlmsg_pid: %u\n", hdr->nlmsg_pid  );
 

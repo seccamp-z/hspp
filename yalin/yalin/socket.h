@@ -37,12 +37,22 @@
 
 typedef struct netlink_s {
   int32_t fd;
-  int32_t proto;
   struct sockaddr_nl local;
+  struct sockaddr_nl peer;
+  uint32_t seq;
+  uint32_t dump;
+  int32_t proto;
+  FILE *dump_fp;
+  int flags;
 } netlink_t;
 
+struct rtnl_ctrl_data {
+  int nsid;
+};
+
 typedef int (*rtnl_listen_filter_t)(
-             const struct sockaddr_nl *,
+             const struct sockaddr_nl*,
+             struct rtnl_ctrl_data *,
              struct nlmsghdr *n, void *);
 
 static inline netlink_t*

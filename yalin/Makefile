@@ -1,5 +1,6 @@
 
 CFLAGS += -Wall -Werror
+CFLAGS += -fsanitize=address
 LDFLAGS +=
 
 SRC = main.c

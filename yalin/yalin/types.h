@@ -1,6 +1,10 @@
 #ifndef _NETLINK_TYPES_H_
 #define _NETLINK_TYPES_H_
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/types.h>
@@ -8,6 +12,74 @@
 #include <linux/socket.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+#include <net/if_arp.h>
+#include "flags.h"
+#include "hexdump.h"
+
+
+inline static const char*
+ifi_type_to_str(uint16_t type)
+{
+  switch (type) {
+    case ARPHRD_NETROM: return "NETROM";
+    case ARPHRD_ETHER: return "ETHER";
+    case ARPHRD_EETHER: return "EETHER";
+    case ARPHRD_AX25: return "AX25";
+    case ARPHRD_PRONET: return "PRONET";
+    case ARPHRD_CHAOS: return "CHAOS";
+    case ARPHRD_IEEE802: return "IEEE802";
+    case ARPHRD_ARCNET: return "ARCNET";
+    case ARPHRD_APPLETLK: return "APPLETLK";
+    case ARPHRD_DLCI: return "DLCI";
+    case ARPHRD_ATM: return "ATM";
+    case ARPHRD_METRICOM: return "METRICOM";
+    case ARPHRD_IEEE1394: return "IEEE1394";
+    case ARPHRD_EUI64: return "EUI64";
+    case ARPHRD_INFINIBAND: return "INFINIBAND";
+    case ARPHRD_SLIP: return "SLIP";
+    case ARPHRD_CSLIP: return "CSLIP";
+    case ARPHRD_SLIP6: return "SLIP6";
+    case ARPHRD_CSLIP6: return "CSLIP6";
+    case ARPHRD_RSRVD: return "RSRVD";
+    case ARPHRD_ADAPT: return "ADAPT";
+    case ARPHRD_ROSE: return "ROSE";
+    case ARPHRD_X25: return "X25";
+    case ARPHRD_HWX25: return "HWX25";
+    case ARPHRD_PPP: return "PPP";
+    case ARPHRD_CISCO: return "CISCO";
+    case ARPHRD_LAPB: return "LAPB";
+    case ARPHRD_DDCMP: return "DDCMP";
+    case ARPHRD_RAWHDLC: return "RAWHDLC";
+    case ARPHRD_TUNNEL: return "TUNNEL";
+    case ARPHRD_TUNNEL6: return "TUNNEL6";
+    case ARPHRD_FRAD: return "FRAD";
+    case ARPHRD_SKIP: return "SKIP";
+    case ARPHRD_LOOPBACK: return "LOOPBACK";
+    case ARPHRD_LOCALTLK: return "LOCALTLK";
+    case ARPHRD_FDDI: return "FDDI";
+    case ARPHRD_BIF: return "BIF";
+    case ARPHRD_SIT: return "SIT";
+    case ARPHRD_IPDDP: return "IPDDP";
+    case ARPHRD_IPGRE: return "IPGRE";
+    case ARPHRD_PIMREG: return "PIMREG";
+    case ARPHRD_HIPPI: return "HIPPI";
+    case ARPHRD_ASH: return "ASH";
+    case ARPHRD_ECONET: return "ECONET";
+    case ARPHRD_IRDA: return "IRDA";
+    case ARPHRD_FCPP: return "FCPP";
+    case ARPHRD_FCAL: return "FCAL";
+    case ARPHRD_FCPL: return "FCPL";
+    case ARPHRD_FCFABRIC: return "FCFABRIC";
+    case ARPHRD_IEEE802_TR: return "IEEE802_TR";
+    case ARPHRD_IEEE80211: return "IEEE80211";
+    case ARPHRD_IEEE80211_PRISM: return "IEEE80211_PRISM";
+    case ARPHRD_IEEE80211_RADIOTAP: return "IEEE80211_RADIOTAP";
+    case ARPHRD_IEEE802154: return "IEEE802154";
+    case ARPHRD_VOID: return "VOID";
+    case ARPHRD_NONE: return "NONE";
+    default: return "unknown";
+  }
+}
 
 inline static const char* nlmsg_type_to_str(uint16_t type)
 {
@@ -187,14 +259,14 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
     case IFLA_ADDRESS:
     case IFLA_BROADCAST:
     {
-      char substr[100];
+      char substr[1000];
       memset(substr, 0x0, sizeof(substr));
       size_t data_len = rta->rta_len-sizeof(struct rtattr);
       uint8_t* data_ptr = (uint8_t*)(rta + 1);
       for (size_t i=0; i<data_len; i++) {
         char subsubstr[100];
         snprintf(subsubstr, sizeof(subsubstr), "%02x:", data_ptr[i]);
-        strncat(substr, subsubstr, sizeof(substr));
+        strncat(substr, subsubstr, strlen(subsubstr));
       }
       snprintf(str, len, "%s <%s>",
           rta_type_to_str(rta->rta_type), substr);
@@ -202,16 +274,17 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
     }
     default:
     {
-      char dstr[100];
+      char dstr[10000];
       memset(dstr, 0, sizeof(dstr));
       uint8_t* ptr = (uint8_t*)(rta + 1);
       for (size_t i=0; i<rta->rta_len-sizeof(struct rtattr); i++) {
-        char sub_str[100];
+        char sub_str[6];
         snprintf(sub_str, sizeof(sub_str), "%02x", ptr[i]);
-        strncat(dstr, sub_str, sizeof(dstr));
+        strncat(dstr, sub_str, strlen(sub_str));
       }
       snprintf(str, len, "%s unsupport-data=<%s>",
           rta_type_to_str(rta->rta_type), dstr);
+      hexdump(stdout, ptr, rta->rta_len-sizeof(struct rtattr));
       return str;
     }
   }

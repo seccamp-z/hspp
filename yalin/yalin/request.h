@@ -17,6 +17,7 @@ netlink_listen(netlink_t *rtnl,
   char   buf[16384];
   iov.iov_base = buf;
   while (true) {
+    struct rtnl_ctrl_data ctrl;
     iov.iov_len = sizeof(buf);
     int status = recvmsg(rtnl->fd, &msg, 0);
     if (status < 0) {
@@ -34,7 +35,7 @@ netlink_listen(netlink_t *rtnl,
     for (struct nlmsghdr* h = (struct nlmsghdr *)buf;
          status >= sizeof(*h);) {
       int len = h->nlmsg_len;
-      int err = handler(&sa, h, jarg);
+      int err = handler(&sa, &ctrl, h, jarg);
       if (err < 0)
         return err;
 
