@@ -16,13 +16,6 @@ dump_msg(const struct sockaddr_nl *who,
 	return 0;
 }
 
-/* static int */
-/* dump_msg2(const struct sockaddr_nl *who, */
-/* 		     struct nlmsghdr *n, void *arg) */
-/* { */
-/* 	return dump_msg(who, NULL, n, arg); */
-/* } */
-
 int
 main(int argc, char **argv)
 {
@@ -31,17 +24,28 @@ main(int argc, char **argv)
 	if (rtnl_open(&rth, groups) < 0)
 		return 1;
 
-	/* if (rtnl_wilddump_request(&rth, AF_UNSPEC, RTM_GETLINK) < 0) { */
-	/* 	perror("Cannot send dump request"); */
-	/* 	return 1; */
-	/* } */
-
-	/* if (rtnl_dump_filter(&rth, dump_msg2, NULL) < 0) { */
-	/* 	fprintf(stderr, "Dump terminated\n"); */
-	/* 	return 1; */
-	/* } */
-
 	if (rtnl_listen(&rth, dump_msg, NULL) < 0)
 		return 2;
 }
 
+#if 0
+int main(int argc, char** argv)
+{
+  int sock = netlink_sock_open();
+  while (true) {
+    uint8_t buf[1000];
+    ssize_t ret = read(sock, buf, sizeof(buf));
+    if (ret < 0) {
+      return -1;
+    }
+
+    for (struct nlmsghdr* hdr = (struct nlmsghdr*)buf;
+         NLMSG_OK(hdr, ret); hdr = NLMSG_NEXT(hdr, ret)) {
+      netlink_msg_dump(stdout, hdr);
+      printf("\n\n\n");
+    }
+
+  } /* while (true) */
+  netlink_sock_close(sock);
+}
+#endif
