@@ -102,6 +102,17 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
           promisc?"promisc=on":"promisc=off");
       return str;
     }
+
+    case IFLA_PROTO_DOWN: // XXX ??? unknown..?
+    case IFLA_OPERSTATE:
+    case IFLA_LINKMODE:
+    case IFLA_CARRIER:
+    {
+      uint8_t num = *(uint8_t*)(rta+1);
+      snprintf(str, len, "%s <%u>",
+          rta_type_to_str(rta->rta_type), num);
+      return str;
+    }
     case IFLA_NUM_TX_QUEUES:
     case IFLA_NUM_RX_QUEUES:
     case IFLA_MTU:
