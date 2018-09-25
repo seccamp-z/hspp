@@ -7,6 +7,7 @@
 #include "socket.h"
 #include "types.h"
 #include "yalin.h"
+#include "filter.h"
 
 #endif /* _YALIN_H_ */
 
