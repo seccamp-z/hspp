@@ -12,6 +12,7 @@
 #include "types.h"
 #include "flags.h"
 #include "hexdump.h"
+#include "rtattr.h"
 
 #ifndef NDM_RTA
 #define NDM_RTA(r) ((struct rtattr*)(((char*)(r))+NLMSG_ALIGN(sizeof(struct ndmsg))))
@@ -35,7 +36,7 @@ netlink_link_msg_dump(FILE* fp, const struct nlmsghdr* hdr)
   size_t rta_len = IFA_PAYLOAD(hdr);
   for (struct rtattr* rta = IFLA_RTA(ifm);
        RTA_OK(rta, rta_len); rta = RTA_NEXT(rta, rta_len)) {
-    char str[512];
+    char str[1000];
     printf("attr[%zd]: %s\n", i++, rta_to_str(rta, str, sizeof(str)));
   }
 }
