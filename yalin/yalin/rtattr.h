@@ -202,7 +202,7 @@ rta_to_str_IFLA_LINKINFO(const struct rtattr* root_rta, char* str, size_t len)
 inline static const char*
 rta_to_str_IFLA_AF_SPEC(const struct rtattr* rta, char* str, size_t len)
 {
-  snprintf(str, len, "IFLA_AF_SPEC unsupported yet");
+  snprintf(str, len, "IFLA_AF_SPEC <unsupported yet>");
   return str;
 }
 
@@ -323,7 +323,7 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
     }
     case IFLA_AF_SPEC:
     {
-      carrydump(stdout, "IFLA_AF_SPEC", rta, rtattr_len(rta));
+      // carrydump(stdout, "IFLA_AF_SPEC", rta, rtattr_len(rta));
       rta_to_str_IFLA_AF_SPEC(rta, str, len);
       return str;
     }
