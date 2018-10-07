@@ -127,9 +127,14 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
           rta_type_to_str(rta->rta_type), num);
       return str;
     }
-    // case IFLA_LINKINFO:
-    // {
-    // }
+    case IFLA_LINKINFO:
+    {
+      uint8_t* ptr = (uint8_t*)(rta + 1);
+      size_t len = rta->rta_len-sizeof(struct rtattr);
+      carrydump(stdout, "IFLA_LINKINFO", ptr, len);
+      snprintf(str, len, "IFLA_LINKINFO");
+      return str;
+    }
     default:
     {
 #if 0
