@@ -17,6 +17,119 @@
 #include "flags.h"
 #include "hexdump.h"
 
+inline static size_t
+align(size_t blocklen, size_t alignlen)
+{
+  /* printf("blocklen: %zd \n", blocklen); */
+  /* printf("alignlen: %zd \n", alignlen); */
+  return (blocklen + alignlen - 1) & ~(alignlen - 1);
+}
+
+inline static uint16_t
+rtattr_type(const struct rtattr* rta)
+{ return rta->rta_type; }
+
+inline static size_t
+rtattr_len(const struct rtattr* rta)
+{ return rta->rta_len; }
+
+inline static size_t
+rtattr_payload_len(const struct rtattr* rta)
+{ return rta->rta_len-sizeof(struct rtattr); }
+
+inline static uint8_t*
+rtattr_payload_ptr(const struct rtattr* rta)
+{ return (uint8_t*)(rta + 1); }
+
+inline static struct rtattr*
+rtattr_next(struct rtattr* rta, ssize_t* buflen)
+{
+  size_t seek_len = align(rtattr_len(rta), 4);
+  if (*buflen <= 0) return NULL;
+  if (seek_len <= 0) return NULL;
+
+  if ((*buflen - seek_len) > sizeof(struct rtattr)) {
+    struct rtattr* next_rta = (struct rtattr*)(((uint8_t*)rta) + seek_len);
+    /* printf("%s: buflen=%zd, state(len,type): cur(0x%lx,0x%x) --seek(%zd)--> nxt(0x%lx,0x%x)\n", */
+    /*     __func__, *buflen, */
+    /*     rtattr_len(rta), rtattr_type(rta), seek_len, */
+    /*     rtattr_len(next_rta), rtattr_type(next_rta)); */
+    *buflen -= seek_len;
+    return next_rta;
+  } else {
+    return NULL;
+  }
+}
+
+inline static uint8_t
+rtattr_read_8bit (const struct rtattr* attr)
+{
+  if (rtattr_payload_len(attr) > sizeof(uint8_t)) {
+    fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
+        rtattr_payload_len(attr), rtattr_type(attr));
+    fprintf(stderr, " - payload_len: %zd\n", rtattr_payload_len(attr));
+    exit(1);
+  }
+  uint8_t val = *(uint8_t*)rtattr_payload_ptr(attr);
+  /* printf("%s: val=%u,0x%x\n", __func__, val, val); */
+  return val;
+}
+
+inline static uint16_t
+rtattr_read_16bit(const struct rtattr* attr)
+{
+  if (rtattr_payload_len(attr) > sizeof(uint16_t)) {
+    fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
+        rtattr_payload_len(attr), rtattr_type(attr));
+    fprintf(stderr, " - payload_len: %zd\n", rtattr_payload_len(attr));
+    exit(1);
+  }
+  uint16_t val = *(uint16_t*)rtattr_payload_ptr(attr);
+  /* printf("%s: val=%u,0x%x\n", __func__, val, val); */
+  return val;
+}
+
+inline static uint32_t
+rtattr_read_32bit(const struct rtattr* attr)
+{
+  if (rtattr_payload_len(attr) > sizeof(uint32_t)) {
+    fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
+        rtattr_payload_len(attr), rtattr_type(attr));
+    fprintf(stderr, " - payload_len: %zd\n", rtattr_payload_len(attr));
+    exit(1);
+  }
+  uint32_t val = *(uint32_t*)rtattr_payload_ptr(attr);
+  /* printf("%s: val=%u,0x%x\n", __func__, val, val); */
+  return val;
+}
+
+inline static uint64_t
+rtattr_read_64bit(const struct rtattr* attr)
+{
+  if (rtattr_payload_len(attr) > sizeof(uint64_t)) {
+    fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
+        rtattr_payload_len(attr), rtattr_type(attr));
+    fprintf(stderr, " - payload_len: %zd\n", rtattr_payload_len(attr));
+    exit(1);
+  }
+  uint64_t val = *(uint64_t*)rtattr_payload_ptr(attr);
+  /* printf("%s: val=%lu,0x%lx\n", __func__, val, val); */
+  return val;
+}
+
+inline static size_t
+rtattr_read_str(const struct rtattr* attr, char* str, size_t strbuflen)
+{
+  if (rtattr_payload_len(attr) > strbuflen) {
+    fprintf(stderr, "%s: read miss (type=%u)\n", __func__, rtattr_type(attr));
+    printf("payloadlen: %zd\n", rtattr_payload_len(attr));
+    printf("strbuflen: %zd\n", strbuflen);
+    exit(1);
+  }
+  snprintf(str, strbuflen, "%s", rtattr_payload_ptr(attr));
+  return align(rtattr_payload_len(attr), 4);
+}
+
 inline static const char*
 rta_to_str(const struct rtattr* rta, char* str, size_t len)
 {
