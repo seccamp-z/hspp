@@ -1,8 +1,16 @@
 
 CFLAGS += -I../
-# LDFLAGS += -L../
+LDFLAGS += -L../
 
-all:
-	$(CC) $(CFLAGS) analyze_rta_IFLA_LINKINFO.c -o analyze_rta_IFLA_LINKINFO.out $(LDFLAGS)
-	$(CC) $(CFLAGS) analyze_rta_IFLA_AF_SPEC.c -o analyze_rta_IFLA_AF_SPEC.out $(LDFLAGS)
-	cp analyze_rta_IFLA_AF_SPEC.out a.out
+.c.out:
+	@echo "  [CC]   $@"
+	@$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
+SRC = $(wildcard *.c)
+OUT = $(SRC:.c=.out)
+
+all: $(OUT)
+	@echo All Compilation is successed.
+
+clean:
+	rm -f $(OUT) a.out
