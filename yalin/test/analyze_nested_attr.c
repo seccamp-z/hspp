@@ -49,7 +49,7 @@ struct rtattr* rtattr_next(struct rtattr* rta, ssize_t* buflen)
   }
 }
 
-uint8_t read_rtattr_8bit (const struct rtattr* attr)
+uint8_t rtattr_read_8bit (const struct rtattr* attr)
 {
   if (rtattr_payload_len(attr) > sizeof(uint8_t)) {
     fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
@@ -62,7 +62,7 @@ uint8_t read_rtattr_8bit (const struct rtattr* attr)
   return val;
 }
 
-uint16_t read_rtattr_16bit(const struct rtattr* attr)
+uint16_t rtattr_read_16bit(const struct rtattr* attr)
 {
   if (rtattr_payload_len(attr) > sizeof(uint16_t)) {
     fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
@@ -75,7 +75,7 @@ uint16_t read_rtattr_16bit(const struct rtattr* attr)
   return val;
 }
 
-uint32_t read_rtattr_32bit(const struct rtattr* attr)
+uint32_t rtattr_read_32bit(const struct rtattr* attr)
 {
   if (rtattr_payload_len(attr) > sizeof(uint32_t)) {
     fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
@@ -88,7 +88,7 @@ uint32_t read_rtattr_32bit(const struct rtattr* attr)
   return val;
 }
 
-uint64_t read_rtattr_64bit(const struct rtattr* attr)
+uint64_t rtattr_read_64bit(const struct rtattr* attr)
 {
   if (rtattr_payload_len(attr) > sizeof(uint64_t)) {
     fprintf(stderr, "%s: read miss (l,t)=(%zd,%u)\n", __func__,
@@ -101,7 +101,7 @@ uint64_t read_rtattr_64bit(const struct rtattr* attr)
   return val;
 }
 
-size_t read_rtattr_str(const struct rtattr* attr, char* str, size_t strbuflen)
+size_t rtattr_read_str(const struct rtattr* attr, char* str, size_t strbuflen)
 {
   if (rtattr_payload_len(attr) > strbuflen) {
     fprintf(stderr, "%s: read miss (type=%u)\n", __func__, rtattr_type(attr));
@@ -128,7 +128,7 @@ void parse_vlan_attrs(struct rtattr* rta,
     goto err_format_inval;
 
   char str[100];
-  size_t readlen = read_rtattr_str(rta, str, sizeof(str));
+  size_t readlen = rtattr_read_str(rta, str, sizeof(str));
   if (strcmp(str, "vlan") != 0)
     goto err_format_inval;
 
@@ -144,13 +144,13 @@ void parse_vlan_attrs(struct rtattr* rta,
       uint16_t type = rtattr_type(nrta);
       switch (type) {
         case IFLA_VLAN_ID:
-          vlaninfo->id = read_rtattr_16bit(nrta);
+          vlaninfo->id = rtattr_read_16bit(nrta);
           break;
         case IFLA_VLAN_FLAGS:
-          vlaninfo->flags = read_rtattr_64bit(nrta);
+          vlaninfo->flags = rtattr_read_64bit(nrta);
           break;
         case IFLA_VLAN_PROTOCOL:
-          vlaninfo->proto = read_rtattr_16bit(nrta);
+          vlaninfo->proto = rtattr_read_16bit(nrta);
           break;
         case IFLA_VLAN_UNSPEC:
         case IFLA_VLAN_EGRESS_QOS:
