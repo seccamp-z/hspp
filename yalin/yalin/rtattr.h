@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 #include <net/if.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -41,8 +42,8 @@ inline static uint8_t*
 rtattr_payload_ptr(const struct rtattr* rta)
 { return (uint8_t*)(rta + 1); }
 
-inline static struct rtattr*
-rtattr_next(struct rtattr* rta, ssize_t* buflen)
+inline static const struct rtattr*
+rtattr_next(const struct rtattr* rta, ssize_t* buflen)
 {
   size_t seek_len = align(rtattr_len(rta), 4);
   if (*buflen <= 0) return NULL;
@@ -59,6 +60,13 @@ rtattr_next(struct rtattr* rta, ssize_t* buflen)
   } else {
     return NULL;
   }
+}
+
+inline static const struct rtattr*
+rtattr_nest_next(const struct rtattr* rta)
+{
+  struct rtattr* nested_rta = (struct rtattr*)rtattr_payload_ptr(rta);
+  return nested_rta;
 }
 
 inline static uint8_t
@@ -128,6 +136,74 @@ rtattr_read_str(const struct rtattr* attr, char* str, size_t strbuflen)
   }
   snprintf(str, strbuflen, "%s", rtattr_payload_ptr(attr));
   return align(rtattr_payload_len(attr), 4);
+}
+
+inline static const char*
+rta_to_str_IFLA_LINKINFO(const struct rtattr* root_rta, char* str, size_t len)
+{
+  assert(rtattr_type(root_rta) == IFLA_LINKINFO);
+  const struct rtattr* rta = rtattr_nest_next(root_rta);
+  assert(rta != NULL);
+  assert(rtattr_type(rta) == IFLA_INFO_KIND);
+
+  char strbuf[100];
+  rtattr_read_str(rta, strbuf, sizeof(strbuf));
+
+  if (strcmp(strbuf, "vlan") == 0) {
+    struct interface_info_vlan {
+      uint16_t proto;
+      uint16_t id;
+      uint64_t flags;
+    } vlaninfo = {0};
+
+    ssize_t l = rtattr_len(rta);
+    rta = rtattr_next(rta, &l);
+    bool ret_cond0 = rta != NULL;
+    bool ret_cond1 = rtattr_type(rta) == IFLA_INFO_DATA;
+    if (ret_cond0 && ret_cond1) {
+      const struct rtattr* nrta = (const struct rtattr*)rtattr_payload_ptr(rta);
+      ssize_t nbuflen = rtattr_payload_len(rta);
+
+      while (nrta) {
+
+        uint16_t type = rtattr_type(nrta);
+        switch (type) {
+          case IFLA_VLAN_ID:
+            vlaninfo.id = rtattr_read_16bit(nrta);
+            break;
+          case IFLA_VLAN_FLAGS:
+            vlaninfo.flags = rtattr_read_64bit(nrta);
+            break;
+          case IFLA_VLAN_PROTOCOL:
+            vlaninfo.proto = rtattr_read_16bit(nrta);
+            break;
+          case IFLA_VLAN_UNSPEC:
+          case IFLA_VLAN_EGRESS_QOS:
+          case IFLA_VLAN_INGRESS_QOS:
+            printf("unsupport ... skip type=0x%04x @%p\n", type, nrta);
+            break;
+        }
+
+        nrta = rtattr_next(nrta, &nbuflen);
+        if (!nrta || nbuflen<=0) break;
+      }
+
+      snprintf(str, len, "IFLA_LINKINFO vlan(id:%u, proto:0x%04x, flags:0x%08lx)",
+          vlaninfo.id, vlaninfo.proto, vlaninfo.flags);
+      return str;
+    }
+  }
+
+  snprintf(str, len, "UNKNOWN LINK KIND (%s)", strbuf);
+  carrydump(stdout, "IFLA_LINKINFO Unknown-link-kind", root_rta, rtattr_len(root_rta));
+  return str;
+}
+
+inline static const char*
+rta_to_str_IFLA_AF_SPEC(const struct rtattr* rta, char* str, size_t len)
+{
+  snprintf(str, len, "IFLA_AF_SPEC unsupported yet");
+  return str;
 }
 
 inline static const char*
@@ -242,10 +318,13 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
     }
     case IFLA_LINKINFO:
     {
-      uint8_t* ptr = (uint8_t*)(rta + 1);
-      size_t len = rta->rta_len-sizeof(struct rtattr);
-      carrydump(stdout, "IFLA_LINKINFO", ptr, len);
-      snprintf(str, len, "IFLA_LINKINFO");
+      rta_to_str_IFLA_LINKINFO(rta, str, len);
+      return str;
+    }
+    case IFLA_AF_SPEC:
+    {
+      carrydump(stdout, "IFLA_AF_SPEC", rta, rtattr_len(rta));
+      rta_to_str_IFLA_AF_SPEC(rta, str, len);
       return str;
     }
     default:
@@ -264,7 +343,7 @@ rta_to_str(const struct rtattr* rta, char* str, size_t len)
       }
       snprintf(str, len, "%s unsupport-data=<%s>",
           rta_type_to_str(rta->rta_type), dstr);
-      hexdump(stdout, ptr, rta->rta_len-sizeof(struct rtattr));
+      hexdump(stdout, rta, rtattr_len(rta));
 #endif
       return str;
     }
