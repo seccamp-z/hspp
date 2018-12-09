@@ -48,9 +48,16 @@ RTE_TARGET ?= x86_64-native-linuxapp-gcc
 
 include $(RTE_SDK)/mk/rte.vars.mk
 
-CFLAGS += -O3
-CFLAGS += $(WERROR_FLAGS)
+CFLAGS += -O0 -g
+# CFLAGS += $(WERROR_FLAGS)
+CFLAGS += $(WERROR_FLAGS) -Wno-deprecated-declarations
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 
 endif
+
+run:
+	sudo ./build/out -w 0000:00:00.0
+
+tap:
+	sudo ./build/out -w 0000:00:00.0 --vdev=net_tap0,iface=tap0
