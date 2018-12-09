@@ -28,8 +28,8 @@ static uint8_t pkt[] = {
 int
 main(int argc, char **argv)
 {
-	int ret = rte_eal_init(argc, argv);
-	if (ret < 0) rte_panic("Cannot init EAL\n");
+  int ret = rte_eal_init(argc, argv);
+  if (ret < 0) rte_panic("Cannot init EAL\n");
 
   const char *fname = "./code/t1.o";
   struct rte_bpf* bpf = mbuf_bpf_elf_load(fname);
@@ -41,6 +41,7 @@ main(int argc, char **argv)
   uint64_t bpfret = rte_bpf_exec(bpf, pkt);
   printf("bpfret:%lu 0x%lx\n", bpfret, bpfret);
 
-	return 0;
+  rte_bpf_destroy(bpf);
+  return 0;
 }
 
