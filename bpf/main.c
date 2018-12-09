@@ -74,7 +74,7 @@ main(int argc, char **argv)
   prm.prog_arg.type = RTE_BPF_ARG_PTR_MBUF;
   prm.prog_arg.size = sizeof(struct rte_mbuf);
   prm.prog_arg.buf_size = RTE_MBUF_DEFAULT_BUF_SIZE;
-  const char *fname = "/home/slankdev/dpdk/test/bpf/t1.o";
+  const char *fname = "./code/t1.o";
 	const char *sname = ".text";
 
   struct rte_bpf* bpf = rte_bpf_elf_load(&prm, fname, sname);
@@ -85,7 +85,6 @@ main(int argc, char **argv)
   printf("bpf:%p\n", bpf);
 
   uint64_t bpfret = rte_bpf_exec(bpf, pkt);
-  printf("bpfret:%lu\n", bpfret);
-
+  printf("bpfret:%lu 0x%lx\n", bpfret, bpfret);
 	return 0;
 }
