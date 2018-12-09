@@ -15,6 +15,7 @@
 #include <rte_debug.h>
 #include <rte_bpf.h>
 #include <rte_byteorder.h>
+#define XDP_DROP 1
 
 /* struct rte_bpf in dpdk source */
 struct bpf {
