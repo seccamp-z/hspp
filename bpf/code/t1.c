@@ -22,8 +22,10 @@
 uint64_t
 entry(void *pkt)
 {
-  struct rte_mbuf* m = (void*)pkt;
-  struct ether_header *eh = rte_pktmbuf_mtod(m, void*);
-  uint16_t type = bswap16(eh->ether_type);
-  return (uint64_t)type;
+  return 1; // drop
+
+  /* struct rte_mbuf* m = (void*)pkt; */
+  /* struct ether_header *eh = rte_pktmbuf_mtod(m, void*); */
+  /* uint16_t type = bswap16(eh->ether_type); */
+  /* return (uint64_t)type; */
 }

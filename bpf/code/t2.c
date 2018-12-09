@@ -21,7 +21,7 @@
   (((uint32_t)(v) & UINT32_C(0xff000000)) >> 24));
 
 /*
- * MODIFY IP SRC FIELD to 10.0.0.20
+ * MODIFY IP SRC FIELD
  */
 uint64_t
 eentry(void *pkt)
@@ -33,6 +33,8 @@ eentry(void *pkt)
     return 0;
 
   struct iphdr* ih = (void*)(eh + 1);
-  ih->saddr = bswap32(0x0a000014);
+  uint32_t saddr = bswap32(ih->saddr);
+  if (saddr == 0x0a000002)
+    ih->saddr = bswap32(0x0a000014);
   return 0;
 }
