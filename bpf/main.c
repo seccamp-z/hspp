@@ -15,42 +15,6 @@
 #include <rte_debug.h>
 #include <rte_bpf.h>
 
-static const struct rte_bpf_xsym bpf_xsym[] = {
-	{
-		.name = RTE_STR(stdout),
-		.type = RTE_BPF_XTYPE_VAR,
-		.var = {
-			.val = &stdout,
-			.desc = {
-				.type = RTE_BPF_ARG_PTR,
-				.size = sizeof(stdout),
-			},
-		},
-	},
-	{
-		.name = RTE_STR(rte_pktmbuf_dump),
-		.type = RTE_BPF_XTYPE_FUNC,
-		.func = {
-			.val = (void *)rte_pktmbuf_dump,
-			.nb_args = 3,
-			.args = {
-				[0] = {
-					.type = RTE_BPF_ARG_RAW,
-					.size = sizeof(uintptr_t),
-				},
-				[1] = {
-					.type = RTE_BPF_ARG_PTR_MBUF,
-					.size = sizeof(struct rte_mbuf),
-				},
-				[2] = {
-					.type = RTE_BPF_ARG_RAW,
-					.size = sizeof(uint32_t),
-				},
-			},
-		},
-	},
-};
-
 static uint8_t pkt[] = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x11, 0x22,
   0x33, 0x44, 0x55, 0x66, 0x08, 0x06, 0x00, 0x01,
@@ -60,12 +24,44 @@ static uint8_t pkt[] = {
   0x00, 0x00,
 };
 
-int
-main(int argc, char **argv)
+static inline struct rte_bpf*
+mbuf_bpf_elf_load(const char* fname)
 {
-	int ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
+  static const struct rte_bpf_xsym bpf_xsym[] = {
+    {
+      .name = RTE_STR(stdout),
+      .type = RTE_BPF_XTYPE_VAR,
+      .var = {
+        .val = &stdout,
+        .desc = {
+          .type = RTE_BPF_ARG_PTR,
+          .size = sizeof(stdout),
+        },
+      },
+    },
+    {
+      .name = RTE_STR(rte_pktmbuf_dump),
+      .type = RTE_BPF_XTYPE_FUNC,
+      .func = {
+        .val = (void *)rte_pktmbuf_dump,
+        .nb_args = 3,
+        .args = {
+          [0] = {
+            .type = RTE_BPF_ARG_RAW,
+            .size = sizeof(uintptr_t),
+          },
+          [1] = {
+            .type = RTE_BPF_ARG_PTR_MBUF,
+            .size = sizeof(struct rte_mbuf),
+          },
+          [2] = {
+            .type = RTE_BPF_ARG_RAW,
+            .size = sizeof(uint32_t),
+          },
+        },
+      },
+    },
+  };
 
 	struct rte_bpf_prm prm;
 	memset(&prm, 0, sizeof(prm));
@@ -74,17 +70,31 @@ main(int argc, char **argv)
   prm.prog_arg.type = RTE_BPF_ARG_PTR_MBUF;
   prm.prog_arg.size = sizeof(struct rte_mbuf);
   prm.prog_arg.buf_size = RTE_MBUF_DEFAULT_BUF_SIZE;
-  const char *fname = "./code/t1.o";
 	const char *sname = ".text";
-
   struct rte_bpf* bpf = rte_bpf_elf_load(&prm, fname, sname);
+  if (bpf == NULL) {
+    printf("MISSED exit\n");
+    return NULL;
+  }
+  return bpf;
+}
+
+int
+main(int argc, char **argv)
+{
+	int ret = rte_eal_init(argc, argv);
+	if (ret < 0) rte_panic("Cannot init EAL\n");
+
+  const char *fname = "./code/t1.o";
+  struct rte_bpf* bpf = mbuf_bpf_elf_load(fname);
   if (bpf == NULL) {
     printf("MISSED exit\n");
     return 1;
   }
-  printf("bpf:%p\n", bpf);
 
   uint64_t bpfret = rte_bpf_exec(bpf, pkt);
   printf("bpfret:%lu 0x%lx\n", bpfret, bpfret);
+
 	return 0;
 }
+
