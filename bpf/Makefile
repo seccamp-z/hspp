@@ -51,6 +51,7 @@ include $(RTE_SDK)/mk/rte.vars.mk
 CFLAGS += -O0 -g
 # CFLAGS += $(WERROR_FLAGS)
 CFLAGS += $(WERROR_FLAGS) -Wno-deprecated-declarations
+LDFLAGS += -lrte_bpf -lelf
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 
