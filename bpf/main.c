@@ -41,6 +41,8 @@ main(int argc, char **argv)
   uint64_t bpfret = rte_bpf_exec(bpf, pkt);
   printf("bpfret:%lu 0x%lx\n", bpfret, bpfret);
 
+  rte_bpf_dump(stdout, bpf);
+
   rte_bpf_destroy(bpf);
   return 0;
 }

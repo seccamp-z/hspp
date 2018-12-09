@@ -1,5 +1,40 @@
 
+#ifndef _BPF_H_
+#define _BPF_H_
+
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <errno.h>
+#include <sys/queue.h>
+#include <rte_memory.h>
+#include <rte_launch.h>
+#include <rte_eal.h>
+#include <rte_per_lcore.h>
+#include <rte_lcore.h>
+#include <rte_debug.h>
 #include <rte_bpf.h>
+#include <rte_byteorder.h>
+
+/* struct rte_bpf in dpdk source */
+struct bpf {
+  struct rte_bpf_prm prm;
+  struct rte_bpf_jit jit;
+  size_t sz;
+  uint32_t stack_sz;
+};
+
+static inline void
+rte_bpf_dump(FILE* f, const struct rte_bpf* bpf_)
+{
+  const struct bpf* bpf = (const void*)bpf_;
+
+  fprintf(f, "bpf <%s>@%p\n", "/pmd/md/t.o", bpf);
+  const uint64_t* ins = (const uint64_t*)(bpf->prm.ins);
+  for (size_t i=0; i<bpf->prm.nb_ins; i++) {
+    printf("  0x%04lx: %016lx\n", i*8, rte_bswap64(ins[i]));
+  }
+}
 
 static inline struct rte_bpf*
 mbuf_bpf_elf_load (const char* fname)
@@ -57,3 +92,5 @@ mbuf_bpf_elf_load (const char* fname)
     }
   return bpf;
 }
+
+#endif /* _BPF_H_ */

@@ -9,25 +9,20 @@
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
 
+#define bswap16(v) \
+ ((((uint16_t)(v) & UINT16_C(0x00ff)) << 8)| \
+  (((uint16_t)(v) & UINT16_C(0xff00)) >> 8));
+
+#define bswap32(v) \
+ ((((uint32_t)(v) & UINT32_C(0x000000ff)) << 24) | \
+  (((uint32_t)(v) & UINT32_C(0x0000ff00)) <<  8) | \
+  (((uint32_t)(v) & UINT32_C(0x00ff0000)) >>  8) | \
+  (((uint32_t)(v) & UINT32_C(0xff000000)) >> 24));
+
 uint64_t
 entry(void *pkt)
 {
 	struct ether_header *eh = (void *)pkt;
-	if (eh->ether_type != htons(0x0806))
-		return 0;
-
-	struct ether_arp *ah = (struct ether_arp*)(eh + 1);
-  if (ah->ea_hdr.ar_op == htons(1)) return 1;
-  else return 0;
-	/* if (iphdr->protocol != 17 || (iphdr->frag_off & 0x1ffff) != 0 || */
-	/* 		iphdr->daddr != htonl(0x1020304)) */
-	/* 	return 0; */
-  /*  */
-	/* int hlen = iphdr->ihl * 4; */
-	/* struct udphdr *udphdr = (void *)iphdr + hlen; */
-  /*  */
-	/* if (udphdr->dest != htons(5000)) */
-	/* 	return 0; */
-  /*  */
-	/* return 1; */
+  uint16_t type = bswap16(eh->ether_type);
+  return (uint64_t)type;
 }
